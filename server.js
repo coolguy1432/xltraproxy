@@ -1,34 +1,37 @@
 import express from "express";
 import fetch from "node-fetch";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-// CORS headers (so your HTML can load iframe from another domain)
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  next();
-});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// /search route
+// Serve static files from public/
+app.use(express.static(path.join(__dirname, "public")));
+
+// Proxy search route
 app.get("/search", async (req, res) => {
   const query = req.query.q;
-  if (!query) {
-    return res.status(400).send("Missing query parameter 'q'");
-  }
+  if (!query) return res.status(400).send("Query missing");
 
   try {
-    // Fetch Google search results page
-    const response = await fetch(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
-    const body = await response.text();
-
-    // Send back HTML (raw Google page)
-    res.send(body);
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+    const text = await response.text();
+    res.send(text);
   } catch (err) {
     res.status(500).send("Error fetching search results");
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`XLTRA Search proxy running on port ${PORT}`);
+// Start server
+app.listen(port, () => {
+  console.log(`XLTRA Search running on port ${port}`);
 });
