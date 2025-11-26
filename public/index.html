@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XLTRA Search</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #000;
+}
+#triCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+#header {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    padding: 20px 40px;
+    border-radius: 20px;
+    border: 3px solid rgba(255,255,255,0.25);
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 45px;
+    color: white;
+    z-index: 10;
+    letter-spacing: 2px;
+}
+#searchBox {
+    margin-top: 15px;
+}
+#searchInput {
+    padding: 10px 15px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.4);
+    width: 300px;
+}
+#searchButton {
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    cursor: pointer;
+    margin-left: 10px;
+}
+#searchButton:hover {
+    background: rgba(255,255,255,0.4);
+}
+#iframeContainer {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 70%;
+    background: rgba(0,0,0,0.95);
+    border-radius: 25px;
+    border: 3px solid rgba(255,255,255,0.25);
+    display: none;
+    z-index: 5;
+}
+#searchResults {
+    width: 100%;
+    height: 100%;
+    border-radius: 25px;
+    border: none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="triCanvas"></canvas>
+
+<div id="header">
+    XLTRA Search
+    <div id="searchBox">
+        <input type="text" id="searchInput" placeholder="Search...">
+        <button id="searchButton">Search</button>
+    </div>
+</div>
+
+<div id="iframeContainer">
+    <iframe id="searchResults"></iframe>
+</div>
+
+<script>
+// Triangle background
+const canvas = document.getElementById('triCanvas');
+const ctx = canvas.getContext('2d');
+let w, h;
+let triangles = [];
+let mouse = {x:0, y:0};
+
+function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    generateTriangles();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+function generateTriangles() {
+    triangles = [];
+    const base = 140;
+    for (let row = 0; row < Math.ceil(h / (base*0.9)) + 4; row++) {
+        for (let col = 0; col < Math.ceil(w / base) + 4; col++) {
+            let size = base + (Math.random()*40 - 20);
+            let x = col * base + (row %2 ===0 ? 0 : base/2);
+            let y = row * (base*0.9);
+            triangles.push({x, y, size, rotation: Math.random()*Math.PI*2});
+        }
+    }
+}
+
+function drawTriangle(t){
+    const dist = Math.hypot(mouse.x - t.x, mouse.y - t.y);
+    const brightness = Math.max(30, 255 - dist * 0.22);
+    ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.rotate(t.rotation);
+    ctx.beginPath();
+    ctx.moveTo(0,-t.size/2);
+    ctx.lineTo(-t.size/1.6,t.size/2);
+    ctx.lineTo(t.size/1.6,t.size/2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function animate() {
+    ctx.clearRect(0,0,w,h);
+    for (let t of triangles) drawTriangle(t);
+    requestAnimationFrame(animate);
+}
+
+resize(); animate();
+
+// Search functionality
+const searchButton = document.getElementById('searchButton');
+const searchInput = document.getElementById('searchInput');
+const iframeContainer = document.getElementById('iframeContainer');
+const searchResults = document.getElementById('searchResults');
+
+searchButton.addEventListener('click', () => {
+    const query = searchInput.value.trim();
+    if(!query) return;
+    iframeContainer.style.display = 'block';
+    searchResults.src = `/search?q=${encodeURIComponent(query)}`;
+});
+</script>
+
+</body>
+</html>
